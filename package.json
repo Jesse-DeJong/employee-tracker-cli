@@ -1,0 +1,27 @@
+{
+  "name": "employee-tracker-cli",
+  "version": "1.0.0",
+  "description": "## Your Task",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jesse-DeJong/employee-tracker-cli.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Jesse-DeJong/employee-tracker-cli/issues"
+  },
+  "homepage": "https://github.com/Jesse-DeJong/employee-tracker-cli#readme",
+  "dependencies": {
+    "console.table": "^0.10.0",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "inquirer": "^8.2.0",
+    "mysql2": "^2.3.2",
+    "sequelize": "^6.8.0"
+  }
+}
