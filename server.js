@@ -76,11 +76,23 @@ async function init() {
   })
 };
 
+// Functions called by the switch returning back to the menu
 function viewAllDepartments() {
-  db.query('SELECT department.id AS ID, department.name AS DEPARTMENT FROM department', function (err, results) {
-      console.table('\n', results, '\n');
-      init();
+  db.query('SELECT department.id AS ID, department.name AS DEPARTMENT FROM department', 
+  function (error, results) {
+    console.table('\n', results, '\n');
+    init();
   })
+}
+
+function viewAllRoles() {
+  db.query(`SELECT role.id, role.title, role.salary, department.name
+      FROM role 
+      JOIN department ON role.department_id = department.id
+      ORDER BY role.id ASC`, function (error, results) {
+          console.table('\n', results, '\n');
+          init();
+      });
 }
 
 init();
