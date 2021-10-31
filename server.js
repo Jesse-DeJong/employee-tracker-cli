@@ -77,6 +77,7 @@ async function init() {
 };
 
 // Functions called by the switch returning back to the menu
+// VIEW calls
 function viewAllDepartments() {
   db.query('SELECT department.id AS ID, department.name AS DEPARTMENT FROM department', 
   function (error, results) {
@@ -112,6 +113,25 @@ function viewAllEmployees() {
                     console.table('\n', results, '\n');
                     init();
                   })
+}
+
+// ADD Calls
+function addADepartment() {
+  inquirer.prompt([
+      {
+          name: "newDepartment",
+          message: "Please enter the new department's name.",
+          type: "input"
+      }
+  ]).then((answers) => {
+      db.query(`INSERT INTO department SET ?`, {
+        name: answers.newDepartment
+      })
+
+      console.log('\n', `Department ${answers.newDepartment} has been added to the Database.`, '\n');
+      init();
+    }
+  )
 }
 
 // Initialisation Call
