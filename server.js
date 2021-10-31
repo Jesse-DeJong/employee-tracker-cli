@@ -29,23 +29,21 @@ db.query = util.promisify(db.query);
 
 // Inquirer Function
 async function init() {
-  inquirer.prompt([
-      {
-          name: "menu",
-          message: "What would you like to do?",
-          type: 'list',
-          choices: [
-              "View All Departments",
-              "View All Roles",
-              "View All Employees",
-              "Add A Department",
-              "Add A Role",
-              "Add an Employee",
-              "Update An Employee Role",
-              "Terminate CLI",
-          ] 
-      }
-  ])
+  inquirer.prompt({
+    name: "menu",
+    message: "What would you like to do?",
+    type: 'list',
+    choices: [
+      "View All Departments",
+      "View All Roles",
+      "View All Employees",
+      "Add A Department",
+      "Add A Role",
+      "Add an Employee",
+      "Update An Employee Role",
+      "Terminate CLI",
+    ] 
+  })
   // Call function based on user selection
   .then((choice) => {
     switch(choice.menu) {
@@ -128,16 +126,14 @@ function addADepartment() {
       db.query(`INSERT INTO department SET ?`, {
         name: answers.newDepartment
       })
-
       console.log('\n', `Department ${answers.newDepartment} has been added to the Database.`, '\n');
       init();
-      
     }
   )
 }
 
 async function addARole() {
-  // Query DB for choices array
+  // Query DB for department choices array
   let departments = await db.query('SELECT * FROM department');
 
   inquirer.prompt([
@@ -163,22 +159,86 @@ async function addARole() {
           })
       }
   ]).then((answers) => {
+      // Destructure the user input
       let { newRole, newSalary } = answers;
       // Find the department by name and get its ID
       let matchedDepartment = departments.find(department => 
           department.name === answers.department).id;
-    
+      
       db.query(`INSERT INTO role SET ?`, {
         title: newRole,
         salary: newSalary,
         department_id: matchedDepartment
       })
-
       console.log('\n', `${newRole} has been added to the Database.`, '\n');
       init();
-
     }
   )
+}
+
+async function addAnEmployee() {
+  // Query DB for role choices array
+  let roles = await db.query('SELECT * FROM role');
+  // Query DB for employee choices array
+  let employees = await db.query(`SELECT
+    employee.id AS id,
+    employee.first_name AS "firstName",
+    employee.last_name AS "lastName",
+      CONCAT(employee.first_name, " ", employee.last_name) AS "employeeName"
+        FROM employee
+        LEFT JOIN employee manager ON manager.id = employee.manager_id
+        INNER JOIN role ON employee.role_id = role.id
+        INNER JOIN department ON role.department_id = department.id`
+  );
+
+  inquirer.prompt([
+      {
+          name: "firstName",
+          message: "What is the employee's first name?",
+          type: "input"
+      },
+      {
+          name: "lastName",
+          message: "What is the employee's last name?",
+          type: "input"
+      },
+      {
+          name: "roleName",
+          message: "What role will the employee be undertaking?",
+          type: "list",
+          choices: roles.map((role) => {
+              return {
+                  name: role.title
+              }
+          })
+      },
+      {
+          name: "managerName",
+          message: "Who will be the employee's manager?",
+          type: "list",
+          choices: employees.map((employee) => {
+              return {
+                  name: `${employee.firstName} ${employee.lastName}`
+              }
+          })
+      }
+  ]).then((answers) => {
+      // Destructure the user input
+      let { firstName, lastName } = answers;
+      // Find the role by name and get its ID
+      let matchedRoleID = roles.find(role => role.title === answers.roleName).id;
+      // Find the manager by name and get their ID
+      let matchedManagerID = employees.find(employee => employee.employeeName === answers.managerName).id;
+      db.query(`INSERT INTO employee SET ?`, {
+        first_name: firstName,
+        last_name: lastName,
+        role_id: matchedRoleID,
+        manager_id: matchedManagerID
+      })
+      console.log('\n', `Employee ${firstName} ${lastName} has been added to the Database.`, '\n');
+      init();
+    }
+  ) 
 }
 
 // Initialisation Call
