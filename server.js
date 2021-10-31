@@ -28,7 +28,7 @@ const db = mysql.createConnection(
 db.query = util.promisify(db.query);
 
 // Inquirer Function
-async function actionPrompt() {
+async function init() {
   inquirer.prompt([
       {
           name: "menu",
@@ -75,6 +75,15 @@ async function actionPrompt() {
     }
   })
 };
+
+function viewAllDepartments() {
+  db.query('SELECT department.id AS ID, department.name AS DEPARTMENT FROM department', function (err, results) {
+      console.table('\n', results, '\n');
+      init();
+  })
+}
+
+init();
 
 // sync sequelize models to the database, then turn on the server
 sequelize.sync({ force: false }).then(() => {
