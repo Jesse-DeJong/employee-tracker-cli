@@ -7,11 +7,7 @@ const mysql = require('mysql2');
 const util = require('util');
 require('dotenv').config();
 
-// import sequelize connection
-const sequelize = require('./config/connection');
-
 const app = express();
-const PORT = process.env.PORT || 3306;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -20,7 +16,7 @@ const db = mysql.createConnection(
   {
       host: process.env.DB_HOST,
       user: process.env.DB_USER,
-      password: process.env.DB_PW,
+      password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME
   },
 );
@@ -229,6 +225,7 @@ async function addAnEmployee() {
       let matchedRoleID = roles.find(role => role.title === answers.roleName).id;
       // Find the manager by name and get their ID
       let matchedManagerID = employees.find(employee => employee.employeeName === answers.managerName).id;
+      
       db.query(`INSERT INTO employee SET ?`, {
         first_name: firstName,
         last_name: lastName,
@@ -241,10 +238,60 @@ async function addAnEmployee() {
   ) 
 }
 
+// Update Calls
+async function updateAnEmployeeRole() {
+  // Query DB for role choices array
+  let roles = await db.query('SELECT * FROM role');
+  // Query DB for employee choices array
+  let employees = await db.query(`SELECT
+    employee.id AS id,
+    employee.first_name AS "firstName",
+    employee.last_name AS "lastName",
+      CONCAT(employee.first_name, " ", employee.last_name) AS "employeeName"
+        FROM employee
+        LEFT JOIN employee manager ON manager.id = employee.manager_id
+        INNER JOIN role ON employee.role_id = role.id
+        INNER JOIN department ON role.department_id = department.id`
+  );
+  
+  inquirer.prompt([
+    {
+      name: "targetEmployee",
+      message: "Which employee's role do you want to update?",
+      type: "list",
+      choices: employees.map((employee) => {
+        return {
+          name: `${employee.firstName} ${employee.lastName}`
+        }
+      })
+    },
+    {
+      name: "targetRole",
+      message: "Which role do you want to update?",
+      type: "list",
+      choices: roles.map((role) => {
+        return {
+          name: role.title
+        }
+      })
+    }
+  ]).then((answers) => {
+      // Destructure the user input
+      let { firstName, lastName } = answers;
+       // Find the role by name and get its ID
+       let matchedRoleID = roles.find(role => role.title === answers.targetRole).id;
+       // Find the manager by name and get their ID
+       let matchedEmployeeID = employees.find(employee => employee.employeeName === answers.targetEmployee).id;
+
+       db.query(`UPDATE employee SET role_id = ? WHERE id = ?`, {
+        role_id: matchedRoleID,
+        id: matchedEmployeeID
+      })
+      console.log('\n', `Employee ${firstName} ${lastName}'s role has been updated.`, '\n');
+      init();
+    }
+  ) 
+}
+
 // Initialisation Call
 init();
-
-// sync sequelize models to the database, then turn on the server
-sequelize.sync({ force: false }).then(() => {
-  app.listen(PORT, () => console.log('Now listening'));
-});
