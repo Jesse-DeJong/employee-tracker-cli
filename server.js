@@ -1,17 +1,19 @@
-const express = require('express');
-
+// Import Dependencies
 const table = require('console.table');
 const inquirer = require('inquirer');
 const { exit } = require('process');
+const express = require('express');
 const mysql = require('mysql2');
 const util = require('util');
 require('dotenv').config();
 
+// Initialise Express
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Initialise Database Connection
 const db = mysql.createConnection(
   {
       host: process.env.DB_HOST,
@@ -23,7 +25,7 @@ const db = mysql.createConnection(
 
 db.query = util.promisify(db.query);
 
-// Inquirer Function
+// Inquirer CLI Tool
 async function init() {
   inquirer.prompt({
     name: "menu",
@@ -70,7 +72,7 @@ async function init() {
   })
 };
 
-// Functions called by the switch returning back to the menu //
+// Functions called by the switch with callbacks for the menu //
 
 // Retrieval calls
 function viewAllDepartments() {
@@ -82,7 +84,11 @@ function viewAllDepartments() {
 }
 
 function viewAllRoles() {
-  db.query(`SELECT role.id, role.title, role.salary, department.name
+  db.query(`SELECT 
+    role.id AS ID,
+    role.title AS "JOB TITLE",
+    role.salary AS "SALARY",
+    department.name AS "DEPARTMENT"
       FROM role 
       JOIN department ON role.department_id = department.id
       ORDER BY role.id ASC`, function (error, results) {
@@ -96,7 +102,7 @@ function viewAllEmployees() {
     SELECT  employee.id AS ID,
             employee.first_name AS "FIRST NAME",
             employee.last_name AS "LAST NAME",
-            role.title AS "TITLE",
+            role.title AS "JOB TITLE",
             role.salary AS "SALARY",
             department.name AS "DEPARTMENT",
             CONCAT(manager.first_name, " ", manager.last_name) AS "MANAGER NAME"
@@ -261,33 +267,30 @@ async function updateAnEmployeeRole() {
       type: "list",
       choices: employees.map((employee) => {
         return {
-          name: `${employee.firstName} ${employee.lastName}`
+          name: `${employee.firstName} ${employee.lastName}`,
         }
       })
     },
     {
       name: "targetRole",
-      message: "Which role do you want to update?",
+      message: "Which role are they moving to?",
       type: "list",
       choices: roles.map((role) => {
         return {
-          name: role.title
+          name: role.title,
         }
       })
     }
   ]).then((answers) => {
-      // Destructure the user input
-      let { firstName, lastName } = answers;
        // Find the role by name and get its ID
        let matchedRoleID = roles.find(role => role.title === answers.targetRole).id;
        // Find the manager by name and get their ID
        let matchedEmployeeID = employees.find(employee => employee.employeeName === answers.targetEmployee).id;
 
-       db.query(`UPDATE employee SET role_id = ? WHERE id = ?`, {
-        role_id: matchedRoleID,
-        id: matchedEmployeeID
-      })
-      console.log('\n', `Employee ${firstName} ${lastName}'s role has been updated.`, '\n');
+       db.query(`UPDATE employee SET role_id = ? WHERE id = ?`, [
+        matchedRoleID, matchedEmployeeID
+      ])
+      console.log('\n', `Employee ${answers.targetEmployee}'s role has been updated.`, '\n');
       init();
     }
   ) 
