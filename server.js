@@ -11,7 +11,7 @@ require('dotenv').config();
 const sequelize = require('./config/connection');
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3306;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -76,8 +76,9 @@ async function init() {
   })
 };
 
-// Functions called by the switch returning back to the menu
-// VIEW calls
+// Functions called by the switch returning back to the menu //
+
+// Retrieval calls
 function viewAllDepartments() {
   db.query('SELECT department.id AS ID, department.name AS DEPARTMENT FROM department', 
   function (error, results) {
@@ -115,7 +116,7 @@ function viewAllEmployees() {
                   })
 }
 
-// ADD Calls
+// Creation Calls
 function addADepartment() {
   inquirer.prompt([
       {
@@ -130,6 +131,52 @@ function addADepartment() {
 
       console.log('\n', `Department ${answers.newDepartment} has been added to the Database.`, '\n');
       init();
+      
+    }
+  )
+}
+
+async function addARole() {
+  // Query DB for choices array
+  let departments = await db.query('SELECT * FROM department');
+
+  inquirer.prompt([
+      {
+          name: "newRole",
+          message: "What is the name of the role?",
+          type: "input"
+      },
+      {
+          name: "newSalary",
+          message: "What is the salary for this role [XX0000]?",
+          type: "number"
+      },
+      {
+          name: "department",
+          message: "Which department does the role belong to?",
+          type: "list",
+          choices: departments.map((department) => {
+              return {
+                  name: department.department_name,
+                  value: department.name
+              }
+          })
+      }
+  ]).then((answers) => {
+      let { newRole, newSalary } = answers;
+      // Find the department by name and get its ID
+      let matchedDepartment = departments.find(department => 
+          department.name === answers.department).id;
+    
+      db.query(`INSERT INTO role SET ?`, {
+        title: newRole,
+        salary: newSalary,
+        department_id: matchedDepartment
+      })
+
+      console.log('\n', `${newRole} has been added to the Database.`, '\n');
+      init();
+
     }
   )
 }
